@@ -7,12 +7,12 @@ pkgdesc="A network analyzer and networking toolkit"
 url="http://netsniff-ng.org/"
 arch="all"
 license="GPL2"
-makedepends="perl bash geoip-dev libsodium-dev linux-headers libpcap-dev libnet-dev libnl3-dev zlib-dev ncurses-dev
+makedepends="geoip-dev libsodium-dev linux-headers libpcap-dev libnet-dev libnl3-dev zlib-dev ncurses-dev
 	libnetfilter_conntrack-dev libnfnetlink-dev coreutils pkgconf gettext-dev"
 subpackages="$pkgname-doc"
 source="http://www.netsniff-ng.org/pub/netsniff-ng/$pkgname-$pkgver.tar.gz
-        fortified-headers.patch::https://github.com/netsniff-ng/netsniff-ng/commit/f232545c215022de5be5e0b37e0c7130962cc5d0.patch
-        trafgen-issues.patch"
+        netsniff-ng-build-fixes.patch"
+
 builddir="$srcdir"/$pkgname-$pkgver
 
 build() {
@@ -30,5 +30,4 @@ package() {
 }
 
 sha512sums="ad33d25f5b063750fa0004cb4ca1a57b9b2c32df3fd507d2a03085340c25326d55743119e3aa98e31333864353410e60e2828de7710b807754cac71befc629e9  netsniff-ng-0.6.3.tar.gz
-ad6fa3510c988756c1f3a8673859b64bb53be44cfa3ab98aed50f2b0e2c198a6e22f695b541a15978473fa0fcb72b1a616b6d21d5d99842643897ee5449363f2  fortified-headers.patch
-bb7b60d0c97fa6b21bd0d9f51cb925e4d633409f8112fb234b6051eab284dbb6ecb5031a16ffea95c4866c406a4d61c229e8530cfbf19c1a792b725fbb663626  trafgen-issues.patch"
+b0441e9ff90eee2b66b757b62d0cc4fb990fe3fd48fc52bab111ad7b67bc61d1b60f7dab908113503942eb9ad7261b8483f5d9b198dcb5b4313b98dd163d42ef  netsniff-ng-build-fixes.patch"

@@ -1,0 +1,180 @@
+--- netsniff-ng-0.6.3.orig/Makefile
++++ netsniff-ng-0.6.3/Makefile
+@@ -175,10 +175,10 @@
+ uninstall: $(foreach tool,$(TOOLS),$(tool)_uninstall)
+ 
+ %.yy.o: %.l
+-	$(LEXQ) -P $(shell perl -wlne 'print $$1 if /lex-func-prefix:\s([a-z]+)/' $<) \
++	$(LEXQ) -P $(shell sed -rn 's/.*lex-func-prefix:\s([a-z]+).*/\1/gp' $<) \
+ 	        -o $(BUILD_DIR)/$(shell basename $< .l).yy.c $(LEX_FLAGS) $<
+ %.tab.o: %.y
+-	$(YACCQ) -p $(shell perl -wlne 'print $$1 if /yacc-func-prefix:\s([a-z]+)/' $<) \
++	$(YACCQ) -p $(shell sed -rn 's/.*yacc-func-prefix:\s([a-z]+).*/\1/gp' $<) \
+ 		 -o $(BUILD_DIR)/$(shell basename $< .y).tab.c $(YAAC_FLAGS) -d $<
+ 
+ $(foreach tool,$(TOOLS),$(eval $(call TOOL_templ,$(tool))))
+--- netsniff-ng-0.6.3.orig/astraceroute.c
++++ netsniff-ng-0.6.3/astraceroute.c
+@@ -21,6 +21,7 @@
+ #include <string.h>
+ #include <asm/byteorder.h>
+ #include <linux/tcp.h>
++#include <netinet/if_ether.h>
+ #include <netinet/ip.h>
+ #include <netinet/ip6.h>
+ #include <netinet/in.h>
+@@ -28,7 +29,6 @@
+ #include <netdb.h>
+ #include <sys/time.h>
+ #include <arpa/inet.h>
+-#include <linux/if_ether.h>
+ #include <linux/icmp.h>
+ #include <linux/icmpv6.h>
+ 
+--- netsniff-ng-0.6.3.orig/bpf_parser.y
++++ netsniff-ng-0.6.3/bpf_parser.y
+@@ -38,9 +38,7 @@
+ 
+ #define YYERROR_VERBOSE		0
+ #define YYDEBUG			0
+-#define YYENABLE_NLS		1
+ #define YYLTYPE_IS_TRIVIAL	1
+-#define ENABLE_NLS		1
+ 
+ extern FILE *yyin;
+ extern int yylex(void);
+--- netsniff-ng-0.6.3.orig/built_in.h
++++ netsniff-ng-0.6.3/built_in.h
+@@ -322,12 +322,6 @@
+ #define be32_to_cpu	cpu_to_be32
+ #define be16_to_cpu	cpu_to_be16
+ 
+-#undef memset
+-#undef memcpy
+-
+-#define memset		fmemset
+-#define memcpy		fmemcpy
+-
+ #if defined(__amd64__) || defined(__x86_64__) || defined(__AMD64__) || \
+     defined(_M_X64) || defined(__amd64)
+ # define CO_IN_CACHE_SHIFT		7
+@@ -382,8 +376,24 @@
+ # define PACKET_QDISC_BYPASS 20
+ #endif
+ 
++#ifndef ARPHRD_CAN
++# define ARPHRD_CAN			280
++#endif
++
+ #ifndef ARPHRD_IEEE802154_MONITOR
+ # define ARPHRD_IEEE802154_MONITOR	805
++#endif
++
++#ifndef ARPHRD_PHONET
++# define ARPHRD_PHONET			820
++#endif
++
++#ifndef ARPHRD_PHONET_PIPE
++# define ARPHRD_PHONET_PIPE		821
++#endif
++
++#ifndef ARPHRD_CAIF
++# define ARPHRD_CAIF			822
+ #endif
+ 
+ #ifndef ARPHRD_IP6GRE
+Only in netsniff-ng-0.6.3: built_in.h.orig
+--- netsniff-ng-0.6.3.orig/csum.h
++++ netsniff-ng-0.6.3/csum.h
+@@ -182,10 +182,10 @@
+ 		uint8_t proto;
+ 	} __packed ph;
+ 
+-	memcpy(&ph.src, ip6->ip6_src.s6_addr, sizeof(ph.src));
+-	memcpy(&ph.dst, ip6->ip6_dst.s6_addr, sizeof(ph.dst));
++	fmemcpy(&ph.src, ip6->ip6_src.s6_addr, sizeof(ph.src));
++	fmemcpy(&ph.dst, ip6->ip6_dst.s6_addr, sizeof(ph.dst));
+ 	ph.len = htons(len);
+-	memset(&ph.mbz, 0, sizeof(ph.mbz));
++	fmemset(&ph.mbz, 0, sizeof(ph.mbz));
+ 	ph.proto = next_proto;
+ 
+ 	vec[0].ptr = (const uint8_t *) (void *) &ph;
+--- netsniff-ng-0.6.3.orig/dev.c
++++ netsniff-ng-0.6.3/dev.c
+@@ -3,7 +3,7 @@
+ #include <sys/ioctl.h>
+ #include <sys/types.h>
+ #include <sys/socket.h>
+-#include <linux/if_arp.h>
++#include <net/if_arp.h>
+ #include <ifaddrs.h>
+ #include <arpa/inet.h>
+ 
+@@ -385,10 +385,8 @@
+ 		return "phonet";
+ 	case ARPHRD_PHONET_PIPE:
+ 		return "phonet_pipe";
+-#if defined(ARPHRD_CAIF)
+ 	case ARPHRD_CAIF:
+ 		return "caif";
+-#endif
+ 	case ARPHRD_IP6GRE:
+ 		return "ip6gre";
+ 	case ARPHRD_NETLINK:
+--- netsniff-ng-0.6.3.orig/link.c
++++ netsniff-ng-0.6.3/link.c
+@@ -1,6 +1,7 @@
+ #include <sys/types.h>
+ #include <sys/ioctl.h>
+ #include <linux/sockios.h>
++#include <string.h>
+ #include <unistd.h>
+ #include <errno.h>
+ 
+--- netsniff-ng-0.6.3.orig/pcap_io.h
++++ netsniff-ng-0.6.3/pcap_io.h
+@@ -14,9 +14,9 @@
+ #include <errno.h>
+ #include <sys/time.h>
+ #include <sys/socket.h>
++#include <net/if_arp.h>
+ #include <linux/if.h>
+ #include <linux/if_packet.h>
+-#include <linux/if_arp.h>
+ 
+ #include "built_in.h"
+ #include "die.h"
+--- netsniff-ng-0.6.3.orig/proc.h
++++ netsniff-ng-0.6.3/proc.h
+@@ -2,6 +2,8 @@
+ #define PROC_H
+ 
+ #include <stdbool.h>
++#include <sys/types.h>
++#include <unistd.h>
+ 
+ extern void cpu_affinity(int cpu);
+ extern int set_proc_prio(int prio);
+--- netsniff-ng-0.6.3.orig/proto_nlmsg.c
++++ netsniff-ng-0.6.3/proto_nlmsg.c
+@@ -12,7 +12,6 @@
+ #include <netlink/msg.h>
+ #include <netlink/route/link.h>
+ #include <netlink/route/addr.h>
+-#include <linux/if_arp.h>
+ #include <arpa/inet.h>
+ 
+ #include "dev.h"
+--- netsniff-ng-0.6.3.orig/trafgen_parser.y
++++ netsniff-ng-0.6.3/trafgen_parser.y
+@@ -43,9 +43,7 @@
+ 
+ #define YYERROR_VERBOSE		0
+ #define YYDEBUG			0
+-#define YYENABLE_NLS		1
+ #define YYLTYPE_IS_TRIVIAL	1
+-#define ENABLE_NLS		1
+ 
+ extern FILE *yyin;
+ extern int yylex(void);
