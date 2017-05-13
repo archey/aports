@@ -1,0 +1,13 @@
+--- netsniff-ng-0.6.3.orig/cpp.c
++++ netsniff-ng-0.6.3/cpp.c
+@@ -2,6 +2,10 @@
+ #include <stdlib.h>
+ #include <libgen.h>
+ 
++#ifndef ino_t
++#include <sys/types.h>
++#endif
++
+ #include "cpp.h"
+ #include "str.h"
+ #include "proc.h"

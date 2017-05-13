@@ -1,44 +1,34 @@
 # Contributor: Fabian Affolter <fabian@affolter-engineering.ch>
 # Maintainer: Fabian Affolter <fabian@affolter-engineering.ch>
 pkgname=netsniff-ng
-pkgver=0.5.8
+pkgver=0.6.3
 pkgrel=0
 pkgdesc="A network analyzer and networking toolkit"
 url="http://netsniff-ng.org/"
 arch="all"
 license="GPL2"
-depends=""
-depends_dev=""
-makedepends="bash perl gzip libpcap-dev libnl3-dev zlib-dev ncurses-dev
-	libnetfilter_conntrack-dev coreutils"
-install=""
+makedepends="perl bash geoip-dev libsodium-dev linux-headers libpcap-dev libnet-dev libnl3-dev zlib-dev ncurses-dev
+	libnetfilter_conntrack-dev libnfnetlink-dev coreutils pkgconf gettext-dev"
 subpackages="$pkgname-doc"
-source="http://www.netsniff-ng.org/pub/netsniff-ng/$pkgname-$pkgver.tar.gz"
-_builddir="$srcdir"/$pkgname-$pkgver
-
-prepare() {
-	local i
-	cd "$_builddir"
-	for i in $source; do
-		case $i in
-		*.patch) msg $i; patch -p1 -i "$srcdir"/$i || return 1;;
-		esac
-	done
-}
+source="http://www.netsniff-ng.org/pub/netsniff-ng/$pkgname-$pkgver.tar.gz
+        fortified-headers.patch::https://github.com/netsniff-ng/netsniff-ng/commit/f232545c215022de5be5e0b37e0c7130962cc5d0.patch
+        trafgen-issues.patch"
+builddir="$srcdir"/$pkgname-$pkgver
 
 build() {
-	cd "$_builddir"
-	./configure \
-		--prefix=/usr \
-		|| return 1
-	make PREFIX=/usr ETCDIR=/etc || return 1
+	cd "$builddir"
+	# forces use of newer libsodium library for curvetun
+        export NACL_LIB=sodium
+        export NACL_INC_DIR=$(pkg-config --variable=includedir libsodium )/sodium
+        ./configure --prefix=/usr
+	make PREFIX=/usr
 }
 
 package() {
-	cd "$_builddir"
-	make PREFIX=/usr  ETCDIR=/etc DESTDIR="$pkgdir" install || return 1
+	cd "$builddir"
+	make DESTDIR="$pkgdir" install
 }
 
-md5sums="5711c99c44a3b573c9f75599f164ecc2  netsniff-ng-0.5.8.tar.gz"
-sha256sums="80436a306947e6c541d573c897cf64e1f223b867f571fabe74cea2ab512aa13c  netsniff-ng-0.5.8.tar.gz"
-sha512sums="fbbd9a48f2f4dc559c10dc3028cbefa881ef72177c993c57fdf09db84c5d7945ded75cec94fe216c6f7db3f2044aa46e7a15bd09b2ab41521416eee1bb464904  netsniff-ng-0.5.8.tar.gz"
+sha512sums="ad33d25f5b063750fa0004cb4ca1a57b9b2c32df3fd507d2a03085340c25326d55743119e3aa98e31333864353410e60e2828de7710b807754cac71befc629e9  netsniff-ng-0.6.3.tar.gz
+ad6fa3510c988756c1f3a8673859b64bb53be44cfa3ab98aed50f2b0e2c198a6e22f695b541a15978473fa0fcb72b1a616b6d21d5d99842643897ee5449363f2  fortified-headers.patch
+bb7b60d0c97fa6b21bd0d9f51cb925e4d633409f8112fb234b6051eab284dbb6ecb5031a16ffea95c4866c406a4d61c229e8530cfbf19c1a792b725fbb663626  trafgen-issues.patch"
